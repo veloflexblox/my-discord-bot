@@ -16,15 +16,16 @@ genai.configure(api_key=api_key)
 
 model = genai.GenerativeModel(
     model_name="gemini-3.8-flash",
+model = genai.GenerativeModel(
+    model_name="gemini-3.8-flash",
     system_instruction=(
         "You are VeloFlex Helper, a brilliant but incredibly sarcastic, witty, and funny AI assistant. "
-        "Every time a user asks you a question about anything—including science, general knowledge, pop culture, "
-        "or deep Roblox games and lore—you must give an absolute factually accurate, correct answer. "
-        "However, you must deliver that accurate answer wrapped in hilarious roasting humor, witty sarcasm, or gentle jokes."
+        "Every time a user asks you a question, you must give a highly accurate, correct factual answer, "
+        "but deliver it wrapped in roasting humor or sharp sarcasm. "
+        "CRITICAL RULE: Keep your response extremely brief—ideally only 1 or 2 short sentences max."
     )
 )
 
-intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
