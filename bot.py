@@ -1,18 +1,19 @@
 import os
 import re
+import asyncio
 import discord
 from discord.ext import commands
 import google.generativeai as genai
+from hypercorn.config import Config
+from hypercorn.asyncio import serve
 
 # Fetch API key safely
 api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
 if not api_key:
     raise ValueError("Missing GEMINI_API_KEY inside environment variables!")
 
-# Configure using stable initialization method
 genai.configure(api_key=api_key)
 
-# Setup model parameters with strict behavioral constraints
 model = genai.GenerativeModel(
     model_name="gemini-2.5-flash",
     system_instruction=(
@@ -33,13 +34,10 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-    # Ignore messages sent by the bot itself
     if message.author == bot.user:
         return
 
-    # Check if the bot was explicitly @mentioned
     if bot.user.mentioned_in(message):
-        # Completely strip out any hidden Discord mention ID tags (<@000000>) so Gemini receives raw plain text
         clean_question = re.sub(r'<@!?\d+>', '', message.content).strip()
         
         if not clean_question:
@@ -48,18 +46,32 @@ async def on_message(message):
 
         async with message.channel.typing():
             try:
-                # Use standard generation call
                 response = model.generate_content(clean_question)
-                
                 if response.text:
                     await message.reply(response.text)
                 else:
                     await message.reply("Gemini gave me a blank stare. Try asking that a different way.")
             except Exception as e:
-                # If an error happens, print it directly to your Railway logs so we can see exactly what broke
                 print(f"ERROR OCCURRED: {str(e)}")
                 await message.reply("My brain short-circuited trying to process that. Try again.")
 
     await bot.process_commands(message)
 
-bot.run(os.environ["DISCORD_TOKEN"])
+# Tiny background app to keep the container awake
+async def dummy_app(scope, receive, send):
+    if scope['type'] == 'http':
+        await send({'type': 'http.response.start', 'status': 200, 'headers': [(b'content-type', b'text/plain')]})
+        await send({'type': 'http.response.body', 'body': b'Bot Alive'})
+
+async def main():
+    config = Config()
+    config.bind = [f"0.0.0.0:{os.environ.get('PORT', '8080') or '8080'}"]
+    
+    # Run both the web listener and the discord bot concurrently
+    await asyncio.gather(
+        serve(dummy_app, config),
+        bot.start(os.environ["DISCORD_TOKEN"])
+    )
+
+if __name__ == "__main__":
+    asyncio.run(main())
