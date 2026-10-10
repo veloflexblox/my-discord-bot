@@ -4,15 +4,26 @@ from discord.ext import commands
 from google import genai
 from google.genai import types
 import threading
-import http.server
-import socketserver
+import os
+import discord
+from discord.ext import commands
+import google.generativeai as genai
 
-# 1. DUMMY WEB SERVER FOR RENDER (Keeps the service alive for free)
-def run_dummy_server():
-    class Handler(http.server.SimpleHTTPRequestHandler):
-        def do_GET(self):
-            self.send_response(200)
-            self.send_header("Content-type", "text/plain")
+# Fetch the key and ensure it isn't blank
+api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+
+if not api_key:
+    raise ValueError("The bot cannot find your GEMINI_API_KEY. Make sure it is saved in your Railway variables!")
+
+# Configure the SDK explicitly
+genai.configure(api_key=api_key)
+
+# Initialize the model
+model = genai.GenerativeModel(
+    model_name="gemini-1.5-flash",
+    system_instruction="You are a brilliant but incredibly sarcastic and funny AI. Every time a user asks you a question, you must give a highly accurate, correct factual answer, but deliver it with roasting humor, jokes, or witty sarcasm."
+)
+
             self.end_headers()
             self.wfile.write(b"Bot is alive!")
 
