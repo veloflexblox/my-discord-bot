@@ -1,12 +1,6 @@
 import os
 import discord
 from discord.ext import commands
-from google import genai
-from google.genai import types
-import threading
-import os
-import discord
-from discord.ext import commands
 import google.generativeai as genai
 
 # Fetch the key and ensure it isn't blank
@@ -24,26 +18,13 @@ model = genai.GenerativeModel(
     system_instruction="You are a brilliant but incredibly sarcastic and funny AI. Every time a user asks you a question, you must give a highly accurate, correct factual answer, but deliver it with roasting humor, jokes, or witty sarcasm."
 )
 
-            self.end_headers()
-            self.wfile.write(b"Bot is alive!")
-
-    port = int(os.environ.get("PORT", 10000))
-    with socketserver.TCPServer(("", port), Handler) as httpd:
-        print(f"Dummy server running on port {port}")
-        httpd.serve_forever()
-
-threading.Thread(target=run_dummy_server, daemon=True).start()
-
-# 2. YOUR DISCORD BOT LOGIC
-gemini_client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f"Logged in as {bot.user.name}")
+    print(f"Logged in as {bot.user}")
 
 @bot.event
 async def on_message(message):
@@ -51,26 +32,19 @@ async def on_message(message):
         return
 
     if bot.user.mentioned_in(message):
-        clean_prompt = message.content.replace(f'<@{bot.user.id}>', '').strip()
-        if not clean_prompt:
-            await message.channel.send("You mentioned me, but you didn't say anything!")
+        clean_question = message.content.replace(f'<@外交{bot.user.id}>', '').strip()
+        
+        if not clean_question:
+            await message.reply("You @'d me but didn't say anything. Typical human behavior.")
             return
 
         async with message.channel.typing():
             try:
-                response = gemini_client.models.generate_content(
-                    model='gemini-2.5-flash',
-                    contents=clean_prompt,
-                    config=types.GenerateContentConfig(
-                        system_instruction="You are a funny, sarcastic, but factually accurate Discord bot.",
-                        max_output_tokens=300,
-                    ),
-                )
+                response = model.generate_content(clean_question)
                 await message.reply(response.text)
             except Exception as e:
-                print(f"Error: {e}")
-                await message.reply("My brain just glitched. Try again!")
+                await message.reply("My brain short-circuited trying to process that. Try again.")
 
     await bot.process_commands(message)
 
-bot.run(os.environ.get("DISCORD_BOT_TOKEN"))
+bot.run(os.environ["DISCORD_TOKEN"])
