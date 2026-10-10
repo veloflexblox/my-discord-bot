@@ -15,7 +15,7 @@ if not api_key:
 genai.configure(api_key=api_key)
 
 model = genai.GenerativeModel(
-    model_name="gemini-2.5-flash",
+    model_name="gemini-3.8-flash",
     system_instruction=(
         "You are VeloFlex Helper, a brilliant but incredibly sarcastic, witty, and funny AI assistant. "
         "Every time a user asks you a question about anything—including science, general knowledge, pop culture, "
