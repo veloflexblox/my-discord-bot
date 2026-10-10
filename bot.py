@@ -14,8 +14,7 @@ if not api_key:
 
 genai.configure(api_key=api_key)
 
-model = genai.GenerativeModel(
-    model_name="gemini-3.8-flash",
+# Clean, working model configuration with short response rules
 model = genai.GenerativeModel(
     model_name="gemini-3.8-flash",
     system_instruction=(
@@ -26,6 +25,7 @@ model = genai.GenerativeModel(
     )
 )
 
+intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
@@ -58,7 +58,7 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
-# Tiny background app to keep the container awake
+# Background app to keep container awake
 async def dummy_app(scope, receive, send):
     if scope['type'] == 'http':
         await send({'type': 'http.response.start', 'status': 200, 'headers': [(b'content-type', b'text/plain')]})
@@ -68,7 +68,6 @@ async def main():
     config = Config()
     config.bind = [f"0.0.0.0:{os.environ.get('PORT', '8080') or '8080'}"]
     
-    # Run both the web listener and the discord bot concurrently
     await asyncio.gather(
         serve(dummy_app, config),
         bot.start(os.environ["DISCORD_TOKEN"])
